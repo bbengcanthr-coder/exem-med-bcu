@@ -2,15 +2,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { questionsDB } from "./questions.js";
 
-// --- FIREBASE CONFIGURATION ---
-// ให้เปลี่ยนค่าตรงนี้เป็น Config จาก Firebase Project ของคุณ
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCTjIf51PEaI5p7xxY4b9QQPZBD-NuPDoI",
+  authDomain: "exem-med-bcu.firebaseapp.com",
+  projectId: "exem-med-bcu",
+  storageBucket: "exem-med-bcu.firebasestorage.app",
+  messagingSenderId: "858879792573",
+  appId: "1:858879792573:web:bd0cf19cac668ace506ed4",
+  measurementId: "G-RLBRT372JF"
 };
 
 // Initialize Firebase
