@@ -1,0 +1,736 @@
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ข้อสอบกลางภาค คณะแพทยศาสตร์ มหาวิทยาลัยเบงจันทร์</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --primary-color: #002147; /* สีกรมท่า มหาวิทยาลัยเบงจันทร์ */
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --border-color: #e0e0e0;
+        }
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .header h2 {
+            margin: 5px 0 0;
+            font-size: 1.1rem;
+            font-weight: 400;
+            color: #d1d5db;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+        }
+        input[type="text"], select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: 'Sarabun', sans-serif;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Sarabun', sans-serif;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #00152e;
+        }
+        .subject-container {
+            margin-top: 30px;
+            border-top: 3px solid var(--primary-color);
+            padding-top: 20px;
+        }
+        .subject-title {
+            font-size: 1.3rem;
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        .question-block {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9fafb;
+            border-radius: 6px;
+            border: 1px solid #f3f4f6;
+        }
+        .question-text {
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .options label {
+            display: block;
+            font-weight: 400;
+            color: var(--text-color);
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+        .options input {
+            margin-right: 10px;
+        }
+        #resultArea {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+        }
+        .grade-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .grade-table th, .grade-table td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        .grade-table th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .gpa-display {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 600px) {
+            .header h1 { font-size: 1.2rem; }
+            .container { padding: 15px; margin: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>ข้อสอบกลางภาค คณะแพทยศาสตร์</h1>
+        <h2>มหาวิทยาลัยเบงจันทร์ ปีการศึกษา 2569</h2>
+    </div>
+
+    <div class="container" id="loginArea">
+        <div class="form-group">
+            <label for="studentName">ชื่อ-นามสกุล นักศึกษาแพทย์</label>
+            <input type="text" id="studentName" placeholder="กรอกชื่อและนามสกุล" required>
+        </div>
+        <div class="form-group">
+            <label for="studyYear">เลือกชั้นปีที่กำลังศึกษา</label>
+            <select id="studyYear">
+                <option value="">-- กรุณาเลือกชั้นปี --</option>
+                <option value="year1">ปี 1 เทอม 1</option>
+                <option value="year2">ปี 2 เทอม 1</option>
+                <option value="year3">ปี 3 เทอม 1</option>
+                <option value="year4">ปี 4 ทั้งเทอม</option>
+                <option value="year5">ปี 5 ทั้งเทอม</option>
+                <option value="year6">ปี 6 (Externship)</option>
+            </select>
+        </div>
+        <button onclick="startExam()">เริ่มทำข้อสอบ</button>
+    </div>
+
+    <div class="container" id="examArea" style="display: none;">
+        <form id="examForm"></form>
+        <button type="button" onclick="submitExam()" style="margin-top: 20px; background-color: #28a745;">ส่งข้อสอบและประมวลผลเกรด</button>
+    </div>
+
+    <div class="container" id="resultArea">
+        <h2 style="text-align: center; color: var(--primary-color);">ใบรายงานผลการสอบ (Transcript)</h2>
+        <p><strong>ชื่อนักศึกษา: </strong><span id="resName"></span></p>
+        <p><strong>ชั้นปี: </strong><span id="resYear"></span></p>
+        <table class="grade-table">
+            <thead>
+                <tr>
+                    <th>รายวิชา</th>
+                    <th>คะแนน (เต็ม 10)</th>
+                    <th>เกรดที่ได้</th>
+                </tr>
+            </thead>
+            <tbody id="gradeBody"></tbody>
+        </table>
+        <div class="gpa-display">GPA: <span id="finalGPA"></span></div>
+    </div>
+
+<script>
+    // 1. ตั้งค่า Firebase (นำข้อมูลจากขั้นตอนที่ 1 มาใส่ตรงนี้)
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "bengchan-med-exam.firebaseapp.com",
+        projectId: "bengchan-med-exam",
+        storageBucket: "bengchan-med-exam.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // 2. ฐานข้อมูลข้อสอบ (ตัวอย่างสำหรับปี 1 สมบูรณ์ 100%)
+    const examData = {
+        "year1": {
+            "ฟิสิกส์ทางการแพทย์": [
+                { q: "1. รังสีชนิดใดมีอำนาจทะลุทะลวงสูงสุดและใช้ในการรักษามะเร็ง?", opts: ["Alpha", "Beta", "Gamma", "Microwave"], ans: 2 },
+                { q: "2. การทำ MRI อาศัยหลักการทางฟิสิกส์เรื่องใด?", opts: ["รังสีเอ็กซ์", "คลื่นแม่เหล็กไฟฟ้าและเรโซแนนซ์", "คลื่นเสียงความถี่สูง", "กัมมันตภาพรังสี"], ans: 1 },
+                { q: "3. คลื่นอัลตราซาวด์ทางการแพทย์ใช้ความถี่ในช่วงใด?", opts: ["20 - 20,000 Hz", "1 - 18 MHz", "100 - 500 GHz", "ต่ำกว่า 20 Hz"], ans: 1 },
+                { q: "4. ปรากฏการณ์ใดอธิบายการไหลของเลือดในหลอดเลือด?", opts: ["Bernoulli's principle", "Archimedes' principle", "Hooke's law", "Snell's law"], ans: 0 },
+                { q: "5. เลนส์ชนิดใดใช้แก้ไขปัญหาสายตาสั้น?", opts: ["เลนส์นูน", "เลนส์เว้า", "เลนส์กาบกล้วย", "ปริซึม"], ans: 1 },
+                { q: "6. พลังงานของโปรตอนคำนวณจากสมการใด?", opts: ["E = mc^2", "E = hf", "F = ma", "V = IR"], ans: 1 },
+                { q: "7. ครึ่งชีวิต (Half-life) ของไอโซโทปหมายถึงอะไร?", opts: ["เวลาที่สารสลายตัวหมด", "เวลาที่สารสลายตัวเหลือครึ่งหนึ่ง", "เวลาที่สารแผ่รังสีสูงสุด", "มวลครึ่งหนึ่งของสาร"], ans: 1 },
+                { q: "8. เครื่อง PET scan ตรวจจับอนุภาคใด?", opts: ["Electron", "Proton", "Neutron", "Positron"], ans: 3 },
+                { q: "9. ในระบบชีวกลศาสตร์ ข้อต่อข้อศอกทำงานเหมือนคานอันดับใด?", opts: ["อันดับ 1", "อันดับ 2", "อันดับ 3", "อันดับ 4"], ans: 2 },
+                { q: "10. ข้อใดคืออันตรายจากรังสี Ionizing?", opts: ["ทำให้ผิวหนังอุ่นขึ้น", "ทำลายโครงสร้าง DNA", "ทำให้กล้ามเนื้อหดตัว", "เพิ่มความดันเลือด"], ans: 1 }
+            ],
+            "เคมีอินทรีย์และชีวเคมีพื้นฐาน": [
+                { q: "1. พันธะที่เชื่อมระหว่างกรดอะมิโนในโปรตีนคือพันธะใด?", opts: ["Glycosidic bond", "Peptide bond", "Phosphodiester bond", "Hydrogen bond"], ans: 1 },
+                { q: "2. โครงสร้างพื้นฐานของเยื่อหุ้มเซลล์คือข้อใด?", opts: ["Triglyceride", "Phospholipid bilayer", "Cholesterol", "Sphingomyelin"], ans: 1 },
+                { q: "3. เอนไซม์ทำงานโดยกลไกใดเป็นหลัก?", opts: ["เพิ่มอุณหภูมิของปฏิกิริยา", "ลดพลังงานกระตุ้น (Activation energy)", "เปลี่ยนทิศทางปฏิกิริยา", "เพิ่มปริมาณสารตั้งต้น"], ans: 1 },
+                { q: "4. กระบวนการ Glycolysis เกิดขึ้นที่ส่วนใดของเซลล์?", opts: ["Mitochondria", "Nucleus", "Cytoplasm", "Golgi apparatus"], ans: 2 },
+                { q: "5. กรดนิวคลีอิกประกอบด้วยเบสชนิดใดบ้างใน DNA?", opts: ["A, U, C, G", "A, T, C, G", "A, T, U, C", "T, U, C, G"], ans: 1 },
+                { q: "6. โครงสร้างใดไม่พบในคาร์โบไฮเดรต?", opts: ["Carbon", "Hydrogen", "Oxygen", "Nitrogen"], ans: 3 },
+                { q: "7. วิตามินใดละลายในไขมัน?", opts: ["Vitamin B1", "Vitamin C", "Vitamin D", "Vitamin B12"], ans: 2 },
+                { q: "8. โมเลกุลใดคือแหล่งพลังงานหลักที่เซลล์นำไปใช้ได้ทันที?", opts: ["Glucose", "ATP", "Glycogen", "NADH"], ans: 1 },
+                { q: "9. ปฏิกิริยา Saponification คือการสร้างสิ่งใด?", opts: ["สบู่", "โปรตีน", "กรดนิวคลีอิก", "คาร์โบไฮเดรต"], ans: 0 },
+                { q: "10. pH ของเลือดมนุษย์ปกติอยู่ที่ประมาณเท่าใด?", opts: ["6.8 - 7.0", "7.35 - 7.45", "7.8 - 8.0", "8.5 - 9.0"], ans: 1 }
+            ],
+            "ชีววิทยาระดับเซลล์และพันธุศาสตร์": [
+                { q: "1. ออร์แกเนลล์ใดทำหน้าที่สร้างพลังงานให้เซลล์?", opts: ["Ribosome", "Nucleus", "Mitochondria", "Lysosome"], ans: 2 },
+                { q: "2. กระบวนการแบ่งเซลล์สืบพันธุ์เรียกว่าอะไร?", opts: ["Mitosis", "Meiosis", "Binary fission", "Budding"], ans: 1 },
+                { q: "3. โรคใดเกิดจากความผิดปกติของโครโมโซมคู่ที่ 21?", opts: ["Turner syndrome", "Klinefelter syndrome", "Down syndrome", "Patau syndrome"], ans: 2 },
+                { q: "4. กระบวนการแปลรหัส (Translation) เกิดขึ้นที่ใด?", opts: ["Nucleus", "Ribosome", "Smooth ER", "Lysosome"], ans: 1 },
+                { q: "5. เซลล์ชนิดใดในร่างกายมนุษย์ที่ไม่มีนิวเคลียสเมื่อโตเต็มที่?", opts: ["Neuron", "White blood cell", "Red blood cell", "Muscle cell"], ans: 2 },
+                { q: "6. การเคลื่อนที่ของสารจากความเข้มข้นต่ำไปสูงต้องใช้สิ่งใด?", opts: ["Osmosis", "Diffusion", "Active transport (ATP)", "Facilitated diffusion"], ans: 2 },
+                { q: "7. กฎของเมนเดลข้อแรกคือข้อใด?", opts: ["Law of Independent Assortment", "Law of Segregation", "Law of Dominance", "Law of Thermodynamics"], ans: 1 },
+                { q: "8. ยีนที่แสดงลักษณะแฝงเรียกว่าอะไร?", opts: ["Dominant", "Recessive", "Allele", "Locus"], ans: 1 },
+                { q: "9. ออร์แกเนลล์ใดมีเอนไซม์สำหรับย่อยสลายสิ่งแปลกปลอม?", opts: ["Golgi body", "Lysosome", "Centriole", "Vacuole"], ans: 1 },
+                { q: "10. Apoptosis หมายถึงอะไร?", opts: ["การเจริญเติบโตของเซลล์", "การแบ่งเซลล์ที่ผิดปกติ", "การตายของเซลล์ที่ถูกตั้งโปรแกรมไว้", "การกลายพันธุ์"], ans: 2 }
+            ],
+            "ภาษาอังกฤษทางการแพทย์ 1": [
+                { q: "1. The prefix 'Brady-' means:", opts: ["Fast", "Slow", "Heart", "Pain"], ans: 1 },
+                { q: "2. The medical term for 'inflammation of the liver' is:", opts: ["Gastritis", "Nephritis", "Hepatitis", "Dermatitis"], ans: 2 },
+                { q: "3. What does the abbreviation 'BP' stand for?", opts: ["Blood Profile", "Blood Pressure", "Body Pain", "Basic Pulse"], ans: 1 },
+                { q: "4. Which term means 'difficulty breathing'?", opts: ["Apnea", "Dyspnea", "Tachypnea", "Bradypnea"], ans: 1 },
+                { q: "5. 'Cardiology' is the study of the:", opts: ["Brain", "Lungs", "Heart", "Stomach"], ans: 2 },
+                { q: "6. The suffix '-ectomy' indicates:", opts: ["Incision into", "Surgical removal", "Visual examination", "Inflammation"], ans: 1 },
+                { q: "7. A patient with 'Hypertension' has:", opts: ["Low blood sugar", "High blood pressure", "Low blood pressure", "High heart rate"], ans: 1 },
+                { q: "8. 'Rx' is a symbol commonly used for:", opts: ["Diagnosis", "Treatment", "Prescription", "History"], ans: 2 },
+                { q: "9. The term 'Erythrocyte' refers to:", opts: ["White blood cell", "Platelet", "Plasma", "Red blood cell"], ans: 3 },
+                { q: "10. If a disease is 'Idiopathic', it means:", opts: ["It is contagious", "The cause is unknown", "It is genetic", "It is fatal"], ans: 1 }
+            ],
+            "จิตวิทยาพื้นฐาน": [
+                { q: "1. บิดาแห่งจิตวิทยาคือใคร?", opts: ["Sigmund Freud", "Wilhelm Wundt", "B.F. Skinner", "Carl Rogers"], ans: 1 },
+                { q: "2. ทฤษฎีจิตวิเคราะห์ (Psychoanalysis) เน้นความสำคัญของสิ่งใด?", opts: ["พฤติกรรมที่สังเกตได้", "จิตไร้สำนึก (Unconscious)", "การตระหนักรู้ในตนเอง", "กระบวนการทางปัญญา"], ans: 1 },
+                { q: "3. การทดลองสุนัขน้ำลายไหลของ Pavlov เป็นการเรียนรู้แบบใด?", opts: ["Operant Conditioning", "Classical Conditioning", "Observational Learning", "Insight Learning"], ans: 1 },
+                { q: "4. โครงสร้างบุคลิกภาพใดตามทฤษฎี Freud ที่ทำหน้าที่ตามหลักความเป็นจริง (Reality Principle)?", opts: ["Id", "Ego", "Superego", "Libido"], ans: 1 },
+                { q: "5. ความต้องการขั้นสูงสุดในทฤษฎีของ Maslow คือข้อใด?", opts: ["ความปลอดภัย", "ความรัก", "ความเคารพยกย่อง", "การตระหนักรู้ศักยภาพของตน (Self-actualization)"], ans: 3 },
+                { q: "6. ฮอร์โมนใดเกี่ยวข้องกับความเครียดมากที่สุด?", opts: ["Dopamine", "Serotonin", "Cortisol", "Oxytocin"], ans: 2 },
+                { q: "7. อาการหลงลืมเหตุการณ์ระยะสั้นเกี่ยวข้องกับสมองส่วนใด?", opts: ["Amygdala", "Hippocampus", "Cerebellum", "Brainstem"], ans: 1 },
+                { q: "8. กลไกป้องกันตัวเอง (Defense Mechanism) แบบใดที่ผู้ป่วยปฏิเสธการเป็นโรคร้ายแรง?", opts: ["Projection", "Repression", "Denial", "Rationalization"], ans: 2 },
+                { q: "9. ความผิดปกติทางอารมณ์ที่สลับระหว่างซึมเศร้าและคลุ้มคลั่งคือโรคใด?", opts: ["Schizophrenia", "Bipolar Disorder", "OCD", "Phobia"], ans: 1 },
+                { q: "10. การบำบัดด้วยการเปลี่ยนความคิดและพฤติกรรมเรียกว่าอะไร?", opts: ["CBT", "ECT", "Psychoanalysis", "Gestalt Therapy"], ans: 0 }
+            ]
+        },
+		"year2": {
+            "มหกายวิภาคศาสตร์ 1": [
+                { q: "1. กล้ามเนื้อใดทำหน้าที่หลักในการหายใจเข้า (Inspiration)?", opts: ["Intercostal muscles", "Diaphragm (กระบังลม)", "Pectoralis major", "Abdominal muscles"], ans: 1 },
+                { q: "2. กระดูกชิ้นใดยาวและแข็งแรงที่สุดในร่างกายมนุษย์?", opts: ["Tibia (กระดูกหน้าแข้ง)", "Humerus (กระดูกต้นแขน)", "Femur (กระดูกต้นขา)", "Fibula (กระดูกน่อง)"], ans: 2 },
+                { q: "3. เส้นประสาทสมอง (Cranial Nerve) คู่ใดควบคุมการเคลื่อนไหวของกล้ามเนื้อใบหน้า?", opts: ["Trigeminal nerve (คู่ที่ 5)", "Facial nerve (คู่ที่ 7)", "Vagus nerve (คู่ที่ 10)", "Hypoglossal nerve (คู่ที่ 12)"], ans: 1 },
+                { q: "4. อวัยวะใดตั้งอยู่ในช่องท้องซีกขวาบน (Right Upper Quadrant)?", opts: ["กระเพาะอาหาร", "ม้าม", "ไส้ติ่ง", "ตับและถุงน้ำดี"], ans: 3 },
+                { q: "5. กระดูกสันหลังส่วนอก (Thoracic vertebrae) มีจำนวนกี่ชิ้น?", opts: ["5 ชิ้น", "7 ชิ้น", "12 ชิ้น", "31 ชิ้น"], ans: 2 },
+                { q: "6. หลอดเลือดใดนำเลือดที่มีออกซิเจนสูงออกจากหัวใจห้องล่างซ้าย?", opts: ["Pulmonary artery", "Aorta", "Vena cava", "Pulmonary vein"], ans: 1 },
+                { q: "7. โครงสร้างใดเชื่อมต่อระหว่างกล้ามเนื้อกับกระดูก?", opts: ["Ligament (เอ็นกระดูก)", "Tendon (เอ็นกล้ามเนื้อ)", "Cartilage (กระดูกอ่อน)", "Fascia (พังผืด)"], ans: 1 },
+                { q: "8. ข้อต่อบริเวณหัวไหล่ (Shoulder joint) เป็นข้อต่อชนิดใด?", opts: ["Hinge joint", "Pivot joint", "Ball and socket joint", "Saddle joint"], ans: 2 },
+                { q: "9. กล้ามเนื้อ Biceps brachii ทำหน้าที่หลักคืออะไร?", opts: ["เหยียดข้อศอก", "งอข้อศอกและหงายมือ", "กางแขนออก", "หมุนหัวไหล่"], ans: 1 },
+                { q: "10. รูใหญ่ใต้กะโหลกศีรษะที่เป็นทางผ่านของก้านสมองและไขสันหลังคือโครงสร้างใด?", opts: ["Foramen ovale", "Jugular foramen", "Foramen magnum", "Optic canal"], ans: 2 }
+            ],
+            "จุลกายวิภาคศาสตร์": [
+                { q: "1. เนื้อเยื่อบุผิว (Epithelium) ชนิดใดพบที่ถุงลมปอดและเหมาะสำหรับการแลกเปลี่ยนก๊าซ?", opts: ["Simple squamous", "Simple cuboidal", "Stratified squamous", "Pseudostratified columnar"], ans: 0 },
+                { q: "2. เซลล์ชนิดใดในเนื้อเยื่อเกี่ยวพันทำหน้าที่สร้างเส้นใยคอลลาเจน?", opts: ["Macrophage", "Adipocyte", "Fibroblast", "Mast cell"], ans: 2 },
+                { q: "3. กระดูกอ่อนชนิดใดพบได้ที่บริเวณใบหูและฝาปิดกล่องเสียง?", opts: ["Hyaline cartilage", "Elastic cartilage", "Fibrocartilage", "Calcified cartilage"], ans: 1 },
+                { q: "4. โครงสร้างใดเป็นรอยต่อเชื่อมระหว่างเซลล์กล้ามเนื้อหัวใจที่พบเฉพาะในกล้ามเนื้อหัวใจเท่านั้น?", opts: ["Z-disc", "Motor end plate", "Intercalated disc", "Sarcolemma"], ans: 2 },
+                { q: "5. เซลล์ชนิดใดในต่อมกระเพาะอาหารทำหน้าที่หลั่งกรดเกลือ (HCl)?", opts: ["Chief cell", "Parietal cell", "Goblet cell", "G cell"], ans: 1 },
+                { q: "6. เม็ดเลือดขาวชนิดใดพบมากที่สุดในกระแสเลือดปกติและทำหน้าที่จัดการแบคทีเรีย?", opts: ["Lymphocyte", "Monocyte", "Eosinophil", "Neutrophil"], ans: 3 },
+                { q: "7. ส่วนใดของเซลล์ประสาททำหน้าที่รับสัญญาณประสาทเข้าสู่ตัวเซลล์?", opts: ["Axon", "Dendrite", "Myelin sheath", "Synapse"], ans: 1 },
+                { q: "8. ต่อมไทรอยด์ (Thyroid gland) มีลักษณะทางจุลกายวิภาคศาสตร์เป็นรูปแบบใด?", opts: ["Tubular gland", "Acinar gland", "Follicular structure", "Cord-like structure"], ans: 2 },
+                { q: "9. ออร์แกเนลล์ใดมีหน้าที่หลักในการสังเคราะห์โปรตีนเพื่อส่งออกนอกเซลล์?", opts: ["Mitochondria", "Smooth Endoplasmic Reticulum", "Rough Endoplasmic Reticulum", "Lysosome"], ans: 2 },
+                { q: "10. Kupffer cell ในตับทำหน้าที่อะไร?", opts: ["สร้างน้ำดี", "จับกินสิ่งแปลกปลอม (Macrophage)", "กักเก็บวิตามินเอ", "สร้างโปรตีนอัลบูมิน"], ans: 1 }
+            ],
+            "สรีรวิทยาพื้นฐาน": [
+                { q: "1. ฮอร์โมนใดที่หลั่งจากตับอ่อนและทำหน้าที่ลดระดับน้ำตาลในเลือด?", opts: ["Glucagon", "Insulin", "Cortisol", "Epinephrine"], ans: 1 },
+                { q: "2. ค่าความดันโลหิต 120/80 mmHg ตัวเลข 120 หมายถึงความดันระยะใด?", opts: ["Systolic pressure", "Diastolic pressure", "Pulse pressure", "Mean arterial pressure"], ans: 0 },
+                { q: "3. กระบวนการแรกของการสร้างปัสสาวะที่เกิดขึ้นในหน่วยไต (Nephron) คืออะไร?", opts: ["Tubular reabsorption", "Tubular secretion", "Glomerular filtration", "Urine concentration"], ans: 2 },
+                { q: "4. ไอออนใดที่เคลื่อนเข้าสู่เซลล์ประสาทอย่างรวดเร็วทำให้เกิดระยะ Depolarization?", opts: ["Potassium (K+)", "Sodium (Na+)", "Calcium (Ca2+)", "Chloride (Cl-)"], ans: 1 },
+                { q: "5. ศูนย์ควบคุมอุณหภูมิและความหิวของร่างกายอยู่ที่ส่วนใดของสมอง?", opts: ["Cerebellum", "Medulla oblongata", "Thalamus", "Hypothalamus"], ans: 3 },
+                { q: "6. ก๊าซคาร์บอนไดออกไซด์ (CO2) ส่วนใหญ่ถูกลำเลียงในเลือดในรูปแบบใด?", opts: ["ละลายในพลาสมา", "จับกับฮีโมโกลบิน", "ในรูปของไบคาร์บอเนตไอออน (HCO3-)", "จับกับโปรตีนอัลบูมิน"], ans: 2 },
+                { q: "7. เอนไซม์อะไมเลส (Amylase) ในน้ำลายทำหน้าที่เริ่มย่อยสารอาหารประเภทใด?", opts: ["โปรตีน", "ไขมัน", "คาร์โบไฮเดรต", "กรดนิวคลีอิก"], ans: 2 },
+                { q: "8. ฮอร์โมน ADH (Antidiuretic Hormone) ทำหน้าที่กระตุ้นการดูดกลับสิ่งใดที่ท่อไต?", opts: ["น้ำ", "โซเดียม", "โพแทสเซียม", "กลูโคส"], ans: 0 },
+                { q: "9. ในวัฏจักรหัวใจ (Cardiac cycle) ระยะที่หัวใจห้องล่างบีบตัวเรียกว่าอะไร?", opts: ["Atrial systole", "Atrial diastole", "Ventricular systole", "Ventricular diastole"], ans: 2 },
+                { q: "10. ระบบประสาทอัตโนมัติซิมพาเทติก (Sympathetic) มีผลต่อร่างกายอย่างไรเมื่อถูกกระตุ้น?", opts: ["ลดอัตราการเต้นหัวใจ", "ขยายม่านตาและเพิ่มอัตราการเต้นหัวใจ", "กระตุ้นการย่อยอาหาร", "หดหลอดลม"], ans: 1 }
+            ],
+            "ระบบหายใจมนุษย์": [
+                { q: "1. โครงสร้างใดทำหน้าที่เป็นแผ่นปิดกั้นทางเดินหายใจขณะกลืนอาหาร?", opts: ["Larynx", "Pharynx", "Epiglottis (ฝาปิดกล่องเสียง)", "Trachea"], ans: 2 },
+                { q: "2. การแลกเปลี่ยนก๊าซออกซิเจนและคาร์บอนไดออกไซด์ในปอดเกิดขึ้นที่บริเวณใด?", opts: ["Bronchi", "Bronchiole", "Alveoli (ถุงลม)", "Pleura"], ans: 2 },
+                { q: "3. สารลดแรงตึงผิว (Surfactant) ที่ป้องกันไม่ให้ถุงลมแฟบ สร้างจากเซลล์ชนิดใด?", opts: ["Type I alveolar cell", "Type II alveolar cell", "Alveolar macrophage", "Goblet cell"], ans: 1 },
+                { q: "4. ปริมาตรอากาศที่สูดเข้าหรือหายใจออกตามปกติในแต่ละครั้ง (ประมาณ 500 ml) เรียกว่าอะไร?", opts: ["Tidal volume", "Vital capacity", "Residual volume", "Inspiratory reserve volume"], ans: 0 },
+                { q: "5. ศูนย์ควบคุมจังหวะการหายใจพื้นฐานอยู่ที่ส่วนใดของก้านสมอง?", opts: ["Midbrain", "Pons", "Medulla oblongata", "Cerebellum"], ans: 2 },
+                { q: "6. ปัจจัยทางเคมีใดในเลือดที่เป็นตัวกระตุ้นให้เกิดการหายใจแรงและเร็วขึ้นมากที่สุด?", opts: ["ระดับออกซิเจน (O2) สูง", "ระดับคาร์บอนไดออกไซด์ (CO2) สูง", "ระดับกลูโคสต่ำ", "ค่า pH ในเลือดสูง (ความเป็นด่าง)"], ans: 1 },
+                { q: "7. โรคถุงลมโป่งพอง (Emphysema) ทำให้เกิดความผิดปกติในข้อใดชัดเจนที่สุด?", opts: ["หลอดลมตีบเกร็ง", "พื้นที่ผิวในการแลกเปลี่ยนก๊าซลดลง", "มีของเหลวคั่งในถุงลม", "กล้ามเนื้อกระบังลมเป็นอัมพาต"], ans: 1 },
+                { q: "8. การขนส่งออกซิเจนในเลือดมากกว่า 98% อาศัยการจับกับโมเลกุลใด?", opts: ["พลาสมาโปรตีน", "ฮีโมโกลบิน (Hemoglobin)", "ไมโอโกลบิน (Myoglobin)", "เกล็ดเลือด"], ans: 1 },
+                { q: "9. กระดูกอ่อนรูปตัวซี (C-shaped cartilage) ป้องกันการแฟบของทางเดินหายใจส่วนใด?", opts: ["Larynx (กล่องเสียง)", "Trachea (หลอดลมคอ)", "Bronchiole (หลอดลมฝอย)", "Alveolar duct"], ans: 1 },
+                { q: "10. กล้ามเนื้อใดมีบทบาทสำคัญที่สุดเมื่อมีการหายใจออกอย่างแรง (Forced expiration)?", opts: ["กล้ามเนื้อกระบังลม", "กล้ามเนื้อยึดซี่โครงด้านนอก", "กล้ามเนื้อหน้าท้อง (Abdominal muscles)", "กล้ามเนื้อคอ"], ans: 2 }
+            ],
+            "คัพภวิทยา": [
+                { q: "1. การปฏิสนธิ (Fertilization) ระหว่างอสุจิกับไข่มักเกิดขึ้นที่บริเวณใดของท่อนำไข่?", opts: ["Isthmus", "Ampulla", "Infundibulum", "Fimbriae"], ans: 1 },
+                { q: "2. ตัวอ่อนในระยะใดที่ทำการฝังตัว (Implantation) เข้าสู่เยื่อบุโพรงมดลูก?", opts: ["Zygote", "Morula", "Blastocyst", "Gastrula"], ans: 2 },
+                { q: "3. เนื้อเยื่อเจริญ (Germ layer) ชั้น Ectoderm จะเจริญไปเป็นอวัยวะใด?", opts: ["กระดูกและกล้ามเนื้อ", "ระบบย่อยอาหาร", "ระบบประสาทและผิวหนัง", "ระบบขับถ่าย"], ans: 2 },
+                { q: "4. อวัยวะใดเจริญมาจากเนื้อเยื่อชั้น Endoderm?", opts: ["ระบบทางเดินอาหารและทางเดินหายใจ", "หัวใจและหลอดเลือด", "สมองและไขสันหลัง", "ระบบสืบพันธุ์"], ans: 0 },
+                { q: "5. โครงสร้างใดทำหน้าที่สำคัญในการแลกเปลี่ยนก๊าซ สารอาหาร และของเสียระหว่างมารดากับทารก?", opts: ["Amniotic sac (ถุงน้ำคร่ำ)", "Placenta (รก)", "Yolk sac", "Chorion"], ans: 1 },
+                { q: "6. ระบบใดของทารกในครรภ์ที่เริ่มทำงานเป็นระบบแรกเพื่อหล่อเลี้ยงเซลล์ที่กำลังเจริญเติบโต?", opts: ["ระบบประสาท", "ระบบหายใจ", "ระบบหัวใจและหลอดเลือด", "ระบบขับถ่าย"], ans: 2 },
+                { q: "7. ความผิดปกติของการปิดหลอดประสาท (Neural tube defect) ป้องกันได้ด้วยการรับประทานสารใดก่อนและระหว่างตั้งครรภ์?", opts: ["Vitamin C", "Folic acid (กรดโฟลิก)", "Iron (ธาตุเหล็ก)", "Calcium"], ans: 1 },
+                { q: "8. หลอดเลือดใดนำเลือดที่มีออกซิเจนสูงจากรกเข้าสู่ตัวทารก?", opts: ["Umbilical artery", "Umbilical vein", "Uterine artery", "Aorta ทารก"], ans: 1 },
+                { q: "9. กะโหลกศีรษะและกระดูกใบหน้าส่วนใหญ่เจริญมาจากกลุ่มเซลล์พิเศษใด?", opts: ["Somites", "Neural crest cells", "Notochord", "Endoderm"], ans: 1 },
+                { q: "10. ช่วงระยะเวลาใดของการตั้งครรภ์ (Embryonic period) ที่มีการสร้างอวัยวะสำคัญทั้งหมดและไวต่อสารก่อมะเร็งมากที่สุด?", opts: ["สัปดาห์ที่ 1 ถึง 2", "สัปดาห์ที่ 3 ถึง 8", "เดือนที่ 4 ถึง 6", "ไตรมาสสุดท้าย"], ans: 1 }
+            ]
+        },
+		"year3": {
+            "พยาธิวิทยาพื้นฐาน": [
+                { q: "1. การปรับตัวของเซลล์ (Cellular adaptation) แบบใดที่เซลล์มีขนาดใหญ่ขึ้น แต่จำนวนเซลล์เท่าเดิม?", opts: ["Hyperplasia", "Hypertrophy", "Atrophy", "Metaplasia"], ans: 1 },
+                { q: "2. การตายของเนื้อเยื่อกล้ามเนื้อหัวใจขาดเลือด (Myocardial infarction) มีลักษณะการตายแบบใด?", opts: ["Coagulative necrosis", "Liquefactive necrosis", "Caseous necrosis", "Fat necrosis"], ans: 0 },
+                { q: "3. เซลล์เม็ดเลือดขาวชนิดใดพบเป็นหลักในกระบวนการอักเสบเฉียบพลัน (Acute inflammation)?", opts: ["Lymphocyte", "Macrophage", "Neutrophil", "Eosinophil"], ans: 2 },
+                { q: "4. ลักษณะใดเป็นตัวบ่งบอกชัดเจนที่สุดว่าเนื้องอกนั้นเป็นเนื้อร้าย (Malignant tumor)?", opts: ["การเจริญเติบโตช้า", "มีแคปซูลหุ้มชัดเจน", "การแพร่กระจายไปยังอวัยวะอื่น (Metastasis)", "เซลล์รูปร่างเหมือนเซลล์ปกติ"], ans: 2 },
+                { q: "5. ปัจจัยใดใน Virchow's triad ที่ทำให้เกิดลิ่มเลือดอุดตัน (Thrombosis) ได้?", opts: ["ความดันโลหิตต่ำ", "การไหลเวียนเลือดช้าลง (Stasis of blood flow)", "การลดลงของเกล็ดเลือด", "ผนังหลอดเลือดบางลง"], ans: 1 },
+                { q: "6. เอนไซม์ใดเป็นตัวแปรสำคัญในกระบวนการ Apoptosis (การตายของเซลล์ที่ถูกตั้งโปรแกรมไว้)?", opts: ["Amylase", "Lipase", "Caspase", "Kinase"], ans: 2 },
+                { q: "7. ภาวะบวมน้ำ (Edema) จากโรคตับแข็ง เกิดจากกลไกใดเป็นหลัก?", opts: ["ความดันไฮโดรสแตติกเพิ่มขึ้น", "ความดันออนโคติกในหลอดเลือดลดลง (Decreased oncotic pressure)", "การอุดตันของหลอดน้ำเหลือง", "หลอดเลือดขยายตัว"], ans: 1 },
+                { q: "8. การสะสมของแคลเซียมในเนื้อเยื่อที่ตายแล้ว โดยที่ระดับแคลเซียมในเลือดปกติ เรียกว่าอะไร?", opts: ["Metastatic calcification", "Dystrophic calcification", "Osteoporosis", "Hypercalcemia"], ans: 1 },
+                { q: "9. Granulation tissue ในกระบวนการหายของแผล (Wound healing) ประกอบด้วยสิ่งใดเป็นหลัก?", opts: ["เนื้อเยื่อไขมันและเส้นประสาท", "หลอดเลือดสร้างใหม่และ Fibroblast", "เซลล์กล้ามเนื้อและกระดูกอ่อน", "เซลล์เม็ดเลือดแดงและลิ่มเลือด"], ans: 1 },
+                { q: "10. กลุ่มอาการ Marfan syndrome เป็นโรคทางพันธุกรรมที่มีการถ่ายทอดแบบใด?", opts: ["Autosomal dominant", "Autosomal recessive", "X-linked dominant", "X-linked recessive"], ans: 0 }
+            ],
+            "จุลชีววิทยาและวิทยาภูมิคุ้มกัน": [
+                { q: "1. โครงสร้างใดในผนังเซลล์ของแบคทีเรียที่ทำให้ติดสีคริสตัลไวโอเลตใน Gram stain (Gram-positive)?", opts: ["Lipopolysaccharide (LPS)", "Peptidoglycan ชั้นหนา", "Mycolic acid", "Teichoic acid"], ans: 1 },
+                { q: "2. เชื้อไวรัส HIV เข้าทำลายเซลล์ใดในระบบภูมิคุ้มกันเป็นหลัก?", opts: ["CD8+ Cytotoxic T cells", "B cells", "CD4+ Helper T cells", "Natural Killer (NK) cells"], ans: 2 },
+                { q: "3. แอนติบอดี (Immunoglobulin) ชนิดใดสามารถผ่านรกจากแม่สู่ลูกได้?", opts: ["IgA", "IgM", "IgE", "IgG"], ans: 3 },
+                { q: "4. ปฏิกิริยาภูมิไวเกินชนิดที่ 1 (Type I Hypersensitivity) เช่น อาการแพ้รุนแรง (Anaphylaxis) เกิดจากแอนติบอดีชนิดใด?", opts: ["IgE", "IgG", "IgM", "IgA"], ans: 0 },
+                { q: "5. เชื้อแบคทีเรีย Mycobacterium tuberculosis ตรวจพบได้ดีที่สุดด้วยวิธีใด?", opts: ["Gram stain", "Acid-fast stain (AFB)", "India ink preparation", "Giemsa stain"], ans: 1 },
+                { q: "6. การทำลายเชื้อด้วยเครื่องนึ่งอัดความดัน (Autoclave) มาตรฐานใช้อุณหภูมิและความดันเท่าใด?", opts: ["100 °C เป็นเวลา 10 นาที", "121 °C ความดัน 15 psi เป็นเวลา 15 นาที", "160 °C เป็นเวลา 2 ชั่วโมง", "72 °C เป็นเวลา 15 วินาที"], ans: 1 },
+                { q: "7. โมเลกุล MHC Class I นำเสนอแอนติเจนให้แก่เซลล์ชนิดใด?", opts: ["CD4+ T cells", "B cells", "CD8+ T cells", "Macrophages"], ans: 2 },
+                { q: "8. เชื้อราฉวยโอกาส (Opportunistic fungi) ชนิดใดมักก่อให้เกิดฝ้าขาวในปากผู้ป่วยภูมิคุ้มกันบกพร่อง?", opts: ["Aspergillus fumigatus", "Cryptococcus neoformans", "Candida albicans", "Histoplasma capsulatum"], ans: 2 },
+                { q: "9. เซลล์ใดทำหน้าที่สร้างแอนติบอดี?", opts: ["T lymphocyte", "Plasma cell", "Macrophage", "Dendritic cell"], ans: 1 },
+                { q: "10. วัคซีนชนิดใดห้ามให้ในผู้ป่วยที่มีภาวะภูมิคุ้มกันบกพร่องรุนแรง?", opts: ["Toxoid vaccine", "Killed vaccine", "Live attenuated vaccine (วัคซีนเชื้อเป็นอ่อนฤทธิ์)", "Subunit vaccine"], ans: 2 }
+            ],
+            "ปรสิตวิทยาทางการแพทย์": [
+                { q: "1. เชื้อมาลาเรียชนิดใดที่ก่อให้เกิดอาการรุนแรงและมีอัตราการเสียชีวิตสูงสุด?", opts: ["Plasmodium vivax", "Plasmodium malariae", "Plasmodium ovale", "Plasmodium falciparum"], ans: 3 },
+                { q: "2. พยาธิไส้เดือน (Ascaris lumbricoides) ติดต่อสู่คนผ่านทางใด?", opts: ["ยุงกัด", "การกินไข่พยาธิที่ปนเปื้อนในอาหารหรือน้ำ", "ตัวอ่อนไชผ่านผิวหนัง", "กินเนื้อหมูสุกๆ ดิบๆ"], ans: 1 },
+                { q: "3. การรับประทานปลาน้ำจืดเกล็ดขาวแบบสุกๆ ดิบๆ เสี่ยงต่อการติดเชื้อพยาธิชนิดใด?", opts: ["พยาธิใบไม้ตับ (Opisthorchis viverrini)", "พยาธิใบไม้ปอด (Paragonimus spp.)", "พยาธิตัวตืดหมู (Taenia solium)", "พยาธิเข็มหมุด (Enterobius vermicularis)"], ans: 0 },
+                { q: "4. ภาวะ Neurocysticercosis (พยาธิขึ้นสมอง) เกิดจากการได้รับสิ่งใดเข้าสู่ร่างกาย?", opts: ["กินเนื้อหมูที่มีซีสต์ตัวอ่อนพยาธิ", "กินไข่ของพยาธิตัวตืดหมู (Taenia solium)", "โดนยุงที่มีเชื้อกัด", "ว่ายน้ำในแหล่งน้ำจืดที่มีหอยคัน"], ans: 1 },
+                { q: "5. เชื้อโปรโตซัวชนิดใดก่อให้เกิดโรคบิดมีตัว (Amebic dysentery)?", opts: ["Giardia lamblia", "Trichomonas vaginalis", "Entamoeba histolytica", "Toxoplasma gondii"], ans: 2 },
+                { q: "6. พาหะนำโรคไข้เลือดออก (Dengue fever) คือแมลงชนิดใด?", opts: ["ยุงก้นปล่อง (Anopheles)", "ยุงลาย (Aedes aegypti)", "ยุงรำคาญ (Culex)", "ริ้นดำ (Black fly)"], ans: 1 },
+                { q: "7. อาการคันก้นในเวลากลางคืนของเด็ก มักเกิดจากพยาธิชนิดใด?", opts: ["พยาธิแส้ม้า (Trichuris trichiura)", "พยาธิปากขอ (Hookworm)", "พยาธิเข็มหมุด/พยาธิเส้นด้าย (Enterobius vermicularis)", "พยาธิตัวจี๊ด (Gnathostoma spinigerum)"], ans: 2 },
+                { q: "8. การติดเชื้อพยาธิปากขอ (Hookworm) มักนำไปสู่ภาวะแทรกซ้อนใดมากที่สุด?", opts: ["ตับแข็ง", "มะเร็งท่อน้ำดี", "ภาวะโลหิตจางจากการขาดธาตุเหล็ก (Iron deficiency anemia)", "ลำไส้อุดตัน"], ans: 2 },
+                { q: "9. เชื้อ Toxoplasma gondii มีสัตว์ชนิดใดเป็นโฮสต์จำเพาะ (Definitive host)?", opts: ["สุนัข", "แมว", "หมู", "วัว"], ans: 1 },
+                { q: "10. ปรสิตภายนอก (Ectoparasite) ชนิดใดเป็นสาเหตุของโรคหิด (Scabies)?", opts: ["Sarcoptes scabiei", "Pediculus humanus", "Phthirus pubis", "Demodex folliculorum"], ans: 0 }
+            ],
+            "เภสัชวิทยาพื้นฐาน": [
+                { q: "1. Bioavailability หมายถึงอะไร?", opts: ["ระยะเวลาที่ยาออกฤทธิ์ครึ่งหนึ่ง", "สัดส่วนของยาที่เข้าสู่กระแสเลือดในรูปแบบที่ออกฤทธิ์ได้", "อัตราการจับตัวของยากับโปรตีนในเลือด", "กระบวนการทำลายยาที่ตับ"], ans: 1 },
+                { q: "2. ยาที่มีฤทธิ์ยับยั้งการทำงานของตัวรับ (Receptor) โดยไม่กระตุ้นให้เกิดการตอบสนอง เรียกว่าอะไร?", opts: ["Agonist", "Partial agonist", "Antagonist", "Inverse agonist"], ans: 2 },
+                { q: "3. กลุ่มยา NSAIDs (เช่น Ibuprofen) ออกฤทธิ์แก้ปวดและลดไข้โดยยับยั้งเอนไซม์ใด?", opts: ["Monoamine oxidase (MAO)", "Cyclooxygenase (COX)", "Angiotensin-converting enzyme (ACE)", "HMG-CoA reductase"], ans: 1 },
+                { q: "4. ยาปฏิชีวนะกลุ่ม Penicillin มีกลไกการออกฤทธิ์อย่างไร?", opts: ["ยับยั้งการสร้างโปรตีนของแบคทีเรีย", "ยับยั้งการจำลอง DNA", "ยับยั้งการสร้างผนังเซลล์ (Cell wall synthesis) ของแบคทีเรีย", "ทำลายเยื่อหุ้มเซลล์"], ans: 2 },
+                { q: "5. การบริหารยา (Route of administration) ทางใดที่ทำให้ยามี Bioavailability 100% ทันที?", opts: ["รับประทาน (Oral)", "ฉีดเข้ากล้ามเนื้อ (Intramuscular)", "ฉีดเข้าหลอดเลือดดำ (Intravenous)", "อมใต้ลิ้น (Sublingual)"], ans: 2 },
+                { q: "6. Therapeutic index (TI) ใช้บอกถึงสิ่งใดของยา?", opts: ["ความแรงของยา (Potency)", "ความปลอดภัยของยา (Safety margin)", "ค่าครึ่งชีวิตของยา", "ความสามารถในการละลายน้ำ"], ans: 1 },
+                { q: "7. ยากลุ่ม Beta-blockers (เช่น Propranolol) มักใช้รักษาโรคใด?", opts: ["โรคหอบหืด", "โรคเบาหวาน", "โรคความดันโลหิตสูง", "โรคแผลในกระเพาะอาหาร"], ans: 2 },
+                { q: "8. อวัยวะใดทำหน้าที่หลักในกระบวนการเปลี่ยนแปลงสภาพยา (Drug metabolism) ในร่างกาย?", opts: ["ไต", "ตับ", "ปอด", "ลำไส้เล็ก"], ans: 1 },
+                { q: "9. ยาขับปัสสาวะกลุ่ม Loop diuretics (เช่น Furosemide) ออกฤทธิ์ที่ส่วนใดของหน่วยไต?", opts: ["Proximal convoluted tubule", "Loop of Henle", "Distal convoluted tubule", "Collecting duct"], ans: 1 },
+                { q: "10. First-pass metabolism คือปรากฏการณ์ที่ยาถูกทำลายอย่างมากที่อวัยวะใดก่อนเข้าสู่ระบบไหลเวียนโลหิตหลัก?", opts: ["กระเพาะอาหาร", "ตับ", "ม้าม", "ไต"], ans: 1 }
+            ],
+            "พยาธิวิทยาตามระบบอวัยวะ": [
+                { q: "1. หลอดเลือดหัวใจเส้นใดที่พบการอุดตันบ่อยที่สุดในภาวะกล้ามเนื้อหัวใจตาย (Myocardial Infarction)?", opts: ["Right coronary artery (RCA)", "Left circumflex artery (LCX)", "Left anterior descending artery (LAD)", "Posterior descending artery (PDA)"], ans: 2 },
+                { q: "2. ลักษณะพยาธิสภาพของโรคหอบหืด (Asthma) แตกต่างจากโรคปอดอุดกั้นเรื้อรัง (COPD) ในข้อใด?", opts: ["Asthma มีการอุดกั้นทางเดินหายใจที่สามารถกลับคืนเป็นปกติได้ (Reversible)", "Asthma พบมากในผู้สูบบุหรี่จัด", "Asthma ทำให้ถุงลมโป่งพองถาวร", "COPD ตอบสนองต่อยาขยายหลอดลมได้ดีกว่า 100%"], ans: 0 },
+                { q: "3. เชื้อแบคทีเรียใดเป็นสาเหตุหลักของโรคแผลในกระเพาะอาหาร (Peptic ulcer disease)?", opts: ["Escherichia coli", "Helicobacter pylori", "Staphylococcus aureus", "Salmonella typhi"], ans: 1 },
+                { q: "4. ภาวะแทรกซ้อนที่สำคัญของโรคตับแข็ง (Cirrhosis) ที่ทำให้มีเส้นเลือดขอดที่หลอดอาหารคือข้อใด?", opts: ["ภาวะตัวเหลืองตาเหลือง", "ความดันหลอดเลือดพอร์ทัลสูง (Portal hypertension)", "มะเร็งเซลล์ตับ", "ระดับอัลบูมินในเลือดต่ำ"], ans: 1 },
+                { q: "5. อาการแสดงคลาสสิกของ Nephrotic syndrome คือข้อใด?", opts: ["ปัสสาวะเป็นเลือดรุนแรง", "โปรตีนรั่วในปัสสาวะปริมาณมาก (Massive proteinuria)", "ความดันโลหิตสูงวิกฤต", "เม็ดเลือดขาวในปัสสาวะสูง"], ans: 1 },
+                { q: "6. พยาธิสภาพหลักของโรคเบาหวานชนิดที่ 1 (Type 1 Diabetes Mellitus) คืออะไร?", opts: ["ภาวะดื้อต่ออินซูลิน (Insulin resistance)", "เซลล์บีตาของตับอ่อนถูกทำลายโดยระบบภูมิคุ้มกัน", "การหลั่งกลูคากอนมากเกินไป", "ตับผลิตกลูโคสลดลง"], ans: 1 },
+                { q: "7. รอยโรค (Lesion) สำคัญในสมองของผู้ป่วยโรคอัลไซเมอร์ (Alzheimer's disease) คือข้อใด?", opts: ["Lewy bodies", "Amyloid plaques และ Neurofibrillary tangles", "Negri bodies", "Demyelination ของเส้นประสาท"], ans: 1 },
+                { q: "8. เชื้อไวรัส HPV สายพันธุ์ใดเป็นสาเหตุหลักของการเกิดมะเร็งปากมดลูก (Cervical cancer)?", opts: ["HPV 6 และ 11", "HPV 16 และ 18", "HPV 1 และ 2", "HPV 42 และ 43"], ans: 1 },
+                { q: "9. มะเร็งเม็ดเลือดขาวชนิดใดพบฟิลาเดลเฟียโครโมโซม (Philadelphia chromosome) เป็นลักษณะเด่น?", opts: ["AML", "ALL", "CLL", "CML"], ans: 3 },
+                { q: "10. ข้อใดอธิบายโรคข้อเข่าเสื่อม (Osteoarthritis) ได้ถูกต้องที่สุด?", opts: ["โรคภูมิคุ้มกันทำลายตัวเอง", "การเสื่อมสภาพของกระดูกอ่อนผิวข้อตามการใช้งาน (Wear and tear)", "การสะสมของผลึกกรดยูริก", "การติดเชื้อแบคทีเรียในน้ำไขข้อ"], ans: 1 }
+            ]
+        },
+		"year4": {
+            "อายุรศาสตร์ 1": [
+                { q: "1. ผู้ป่วยมาด้วยอาการใจสั่น ตรวจคลื่นไฟฟ้าหัวใจพบ Irregularly irregular rhythm ไม่มี P wave การวินิจฉัยที่น่าจะเป็นไปได้มากที่สุดคือ?", opts: ["Atrial fibrillation", "Sinus tachycardia", "Ventricular tachycardia", "Atrial flutter"], ans: 0 },
+                { q: "2. การรักษาอันดับแรกในผู้ป่วยภาวะ Ketoacidosis จากเบาหวาน (DKA) คือข้อใด?", opts: ["ให้ยากระตุ้นหัวใจ", "ให้สารน้ำทดแทนทางหลอดเลือดดำและอินซูลิน", "ให้ยาปฏิชีวนะ", "จำกัดสารน้ำ"], ans: 1 },
+                { q: "3. มาตรฐานการวินิจฉัยภาวะความดันโลหิตสูงในผู้ป่วยทั่วไปคือค่าเท่าใด?", opts: ["≥ 120/80 mmHg", "≥ 130/85 mmHg", "≥ 140/90 mmHg", "≥ 160/100 mmHg"], ans: 2 },
+                { q: "4. ยาในกลุ่มใดเป็นยาหลัก (First-line) สำหรับภาวะหัวใจล้มเหลว (Heart failure with reduced EF)?", opts: ["Calcium channel blockers", "ACE inhibitors / ARBs", "Aspirin", "Statins"], ans: 1 },
+                { q: "5. อาการแสดงของโรคไตเรื้อรังระยะสุดท้าย (ESRD) มักพบลักษณะใด?", opts: ["ความดันโลหิตต่ำ", "โลหิตจาง (Anemia)", "น้ำหนักตัวเพิ่มจากกล้ามเนื้อ", "ปัสสาวะปริมาณมากผิดปกติ"], ans: 1 },
+                { q: "6. ผู้ป่วยไอเรื้อรัง น้ำหนักลด มีไข้ต่ำๆ ตอนเย็น ผลภาพถ่ายรังสีปอดพบโพรงที่ยอดปอด นึกถึงโรคใด?", opts: ["ปอดอักเสบจากเชื้อแบคทีเรีย", "มะเร็งปอด", "วัณโรคปอด (Pulmonary TB)", "หอบหืด"], ans: 2 },
+                { q: "7. การตรวจทางห้องปฏิบัติการใดมีความจำเพาะสูงสุดในการวินิจฉัยโรคหัวใจขาดเลือดเฉียบพลัน (STEMI)?", opts: ["AST", "Troponin I หรือ T", "LDH", "ALP"], ans: 1 },
+                { q: "8. ยาปฏิชีวนะใดเป็นตัวเลือกแรกในการรักษาโรคปอดอักเสบในชุมชน (CAP) ในผู้ป่วยที่แข็งแรงดี?", opts: ["Vancomycin", "Amoxicillin หรือ Macrolides", "Metronidazole", "Gentamicin"], ans: 1 },
+                { q: "9. ผู้ป่วยมีอาการอ่อนแรงครึ่งซีกเฉียบพลัน สิ่งที่ต้องรีบทำคือ?", opts: ["รอให้อาการดีขึ้นเอง", "ส่งทำ CT Scan สมองทันทีเพื่อแยกประเภทโรคหลอดเลือดสมอง", "ให้ยาแก้ปวด", "เจาะเลือดดูค่าตับ"], ans: 1 },
+                { q: "10. ภาวะน้ำตาลในเลือดต่ำ (Hypoglycemia) นิยามคือค่าเท่าใด?", opts: ["< 50 mg/dL", "< 70 mg/dL", "< 100 mg/dL", "< 120 mg/dL"], ans: 1 }
+            ],
+            "ศัลยศาสตร์ 1": [
+                { q: "1. อาการปวดท้องเริ่มแรกปวดรอบสะดือแล้วย้ายไปปวดที่ท้องน้อยขวาล่าง นึกถึงโรคใด?", opts: ["ถุงน้ำดีอักเสบ", "ไส้ติ่งอักเสบ (Appendicitis)", "กรวยไตอักเสบ", "ตับอ่อนอักเสบ"], ans: 1 },
+                { q: "2. การประเมินความรุนแรงของการบาดเจ็บในห้องฉุกเฉินควรยึดหลักการใด?", opts: ["ABCDE", "Head to toe", "ถามประวัติอย่างละเอียดก่อน", "รอผลแล็บก่อนตัดสินใจ"], ans: 0 },
+                { q: "3. ภาวะไส้เลื่อนติดค้าง (Incarcerated hernia) ที่มีอาการปวดแดงและมีไข้ บ่งบอกถึงภาวะใด?", opts: ["Strangulated hernia (ลำไส้ขาดเลือด)", "ปกติของไส้เลื่อน", "ไส้เลื่อนลดเองได้", "เป็นแค่ไขมัน"], ans: 0 },
+                { q: "4. ก่อนผ่าตัดผู้ป่วยควรทำ NPO (งดน้ำและอาหาร) เพื่ออะไร?", opts: ["ลดความเสี่ยงการสำลัก (Aspiration)", "ให้ผู้ป่วยลดน้ำหนัก", "เพื่อให้ลำไส้สะอาด", "เพื่อให้หมอผ่าตัดสะดวก"], ans: 0 },
+                { q: "5. การปฐมพยาบาลเบื้องต้นสำหรับแผลไฟไหม้ที่ถูกต้องคือ?", opts: ["ทายาสีฟัน", "ล้างด้วยน้ำสะอาดอุณหภูมิห้อง", "ใช้น้ำแข็งประคบ", "ทาเนย"], ans: 1 },
+                { q: "6. อาการของลำไส้อุดตัน (Intestinal obstruction) คือข้อใด?", opts: ["ถ่ายเหลวตลอดเวลา", "ปวดท้องบิด ท้องอืด อาเจียน และไม่ผายลม", "หิวบ่อย", "ปวดหัว"], ans: 1 },
+                { q: "7. สัญญาณเตือนของมะเร็งลำไส้ใหญ่ที่พบได้บ่อยคือ?", opts: ["ถ่ายเป็นเลือดหรือนิสัยการขับถ่ายเปลี่ยนไป", "เจ็บหน้าอก", "ตาเหลือง", "ผมร่วง"], ans: 0 },
+                { q: "8. การตรวจร่างกายด้วยการคลำหน้าท้องแล้วปล่อยมือทันทีแล้วปวด (Rebound tenderness) บ่งบอกถึงภาวะใด?", opts: ["เยื่อบุช่องท้องอักเสบ (Peritonitis)", "กระเพาะอาหารอักเสบ", "นิ่วในไต", "กล้ามเนื้ออักเสบ"], ans: 0 },
+                { q: "9. การติดเชื้อที่ผิวหนังและเนื้อเยื่ออ่อนที่ลามอย่างรวดเร็วและมีก๊าซในชั้นเนื้อเยื่อคือ?", opts: ["Cellulitis", "Necrotizing fasciitis", "Abscess", "Impetigo"], ans: 1 },
+                { q: "10. ข้อใดคือความสำคัญของ 'Golden Hour' ในผู้ป่วยบาดเจ็บรุนแรง?", opts: ["ช่วงเวลาที่ผ่าตัดฟรี", "ช่วงเวลาที่ให้ผลลัพธ์การรักษาดีที่สุดหากได้รับการดูแลทันที", "เวลาที่หมอจะมาถึงโรงพยาบาล", "เวลาในการรอผลเลือด"], ans: 1 }
+            ],
+            "กุมารเวชศาสตร์ 1": [
+                { q: "1. ช่วงอายุใดที่ถือเป็นทารกแรกเกิด (Neonatal period)?", opts: ["0-28 วัน", "0-6 เดือน", "0-1 ปี", "0-3 ปี"], ans: 0 },
+                { q: "2. อาการสำคัญของโรคไข้เลือดออกในเด็กคือ?", opts: ["ไอจาม", "ไข้สูง จุดเลือดออก และเกล็ดเลือดต่ำ", "ท้องเสีย", "ปวดหู"], ans: 1 },
+                { q: "3. การกระตุ้นพัฒนาการเด็กควรเน้นในด้านใด?", opts: ["ด้านร่างกาย สติปัญญา อารมณ์ และสังคม", "เฉพาะด้านการเรียน", "เฉพาะการกินอาหาร", "แค่การนอน"], ans: 0 },
+                { q: "4. นมแม่มีข้อดีอย่างไรต่อเด็กทารก?", opts: ["มีภูมิคุ้มกันโรค", "สะดวกและประหยัด", "ย่อยง่าย", "ถูกทุกข้อ"], ans: 3 },
+                { q: "5. โรคใดเป็นสาเหตุการเสียชีวิตอันดับต้นๆ ในเด็กที่เกิดจากอาการท้องเสียรุนแรง?", opts: ["ภาวะขาดน้ำ (Dehydration)", "ภาวะขาดวิตามิน", "โรคอ้วน", "โรคฟันผุ"], ans: 0 },
+                { q: "6. อาการหอบเหนื่อยในเด็กที่มีเสียงวี๊ด (Wheezing) นึกถึงโรคใดมากที่สุด?", opts: ["หอบหืด (Asthma)", "ปอดอักเสบ", "คออักเสบ", "หูชั้นกลางอักเสบ"], ans: 0 },
+                { q: "7. การประเมินภาวะโภชนาการในเด็กที่ถูกต้องที่สุดคือ?", opts: ["ดูแค่ความอ้วน", "ดูน้ำหนักตามเกณฑ์อายุและส่วนสูงตามเกณฑ์อายุ", "ดูแค่การกิน", "ให้คนอื่นดูให้"], ans: 1 },
+                { q: "8. ภาวะตัวเหลือง (Jaundice) ในทารกแรกเกิดที่น่ากังวลคือ?", opts: ["เหลืองใน 24 ชั่วโมงแรกหลังเกิด", "เหลืองหลังวันที่ 3", "เหลืองที่ใบหน้าเท่านั้น", "เหลืองแต่ดูดนมได้ดี"], ans: 0 },
+                { q: "9. การฉีดวัคซีนป้องกันโรคใดเป็นวัคซีนพื้นฐานที่สำคัญที่สุด?", opts: ["วัคซีนป้องกันวัณโรค (BCG)", "วัคซีนป้องกันมะเร็ง", "วัคซีนลดอ้วน", "วัคซีนเสริมความงาม"], ans: 0 },
+                { q: "10. อาการไข้สูงและชักในเด็ก (Febrile seizure) มักพบในช่วงอายุใด?", opts: ["6 เดือน - 5 ปี", "10 - 15 ปี", "ทุกช่วงอายุ", "เฉพาะวัยรุ่น"], ans: 0 }
+            ],
+            "สูติศาสตร์-นรีเวชวิทยา 1": [
+                { q: "1. การตรวจหาการตั้งครรภ์เบื้องต้นตรวจหาสารใด?", opts: ["HCG", "Estrogen", "Progesterone", "FSH"], ans: 0 },
+                { q: "2. อาการตกเลือดรุนแรงในระยะครรภ์อ่อนๆ นึกถึงภาวะใด?", opts: ["การแท้งบุตร", "ท้องนอกมดลูก", "รกเกาะต่ำ", "ถูกทุกข้อ"], ans: 3 },
+                { q: "3. อาการครรภ์เป็นพิษ (Preeclampsia) มีอาการเด่นคือ?", opts: ["ความดันโลหิตสูงและมีโปรตีนในปัสสาวะ", "ไข้สูง", "ปวดหลัง", "ท้องเสีย"], ans: 0 },
+                { q: "4. รกเกาะต่ำ (Placenta previa) มีอาการสำคัญคือ?", opts: ["ปวดท้องน้อย", "เลือดออกทางช่องคลอดโดยไม่ปวดท้อง", "ไข้สูง", "น้ำเดิน"], ans: 1 },
+                { q: "5. การฝากครรภ์มีความสำคัญอย่างไร?", opts: ["ป้องกันภาวะแทรกซ้อน", "ติดตามการเจริญเติบโตของทารก", "ให้คำแนะนำโภชนาการ", "ถูกทุกข้อ"], ans: 3 },
+                { q: "6. ระยะเวลาปกติของการตั้งครรภ์คือประมาณกี่สัปดาห์?", opts: ["30 สัปดาห์", "40 สัปดาห์", "50 สัปดาห์", "60 สัปดาห์"], ans: 1 },
+                { q: "7. มะเร็งปากมดลูกป้องกันได้ด้วยวิธีใด?", opts: ["การฉีดวัคซีน HPV และการตรวจคัดกรอง (Pap smear)", "การออกกำลังกาย", "การกินวิตามิน", "การนอนหลับพักผ่อน"], ans: 0 },
+                { q: "8. ภาวะน้ำเดินก่อนเจ็บครรภ์คลอด (Premature Rupture of Membranes) เสี่ยงต่อภาวะใด?", opts: ["การติดเชื้อในโพรงมดลูก", "เด็กขาดอากาศ", "รกเกาะต่ำ", "ครรภ์เป็นพิษ"], ans: 0 },
+                { q: "9. วัตถุประสงค์ของการทำอัลตราซาวด์ระหว่างฝากครรภ์คือ?", opts: ["ดูความพิการของทารก", "ดูตำแหน่งรกและอายุครรภ์", "ดูจำนวนทารก", "ถูกทุกข้อ"], ans: 3 },
+                { q: "10. อาการตกขาวผิดปกติ (Vaginitis) มักมีลักษณะอย่างไร?", opts: ["มีกลิ่น เหม็น หรือเปลี่ยนสีไป", "ไม่มีอาการเลย", "เป็นเลือดสีแดงสด", "ไม่มีสี"], ans: 0 }
+            ]
+        },
+        "year5": {
+            "เวชศาสตร์ฉุกเฉิน": [
+                { q: "1. ในผู้ป่วยหมดสติที่มีการบาดเจ็บที่คอ การเปิดทางเดินหายใจที่ปลอดภัยที่สุดคือ?", opts: ["Head tilt-Chin lift", "Jaw thrust", "Jaw lift", "None of the above"], ans: 1 },
+                { q: "2. ยาตัวแรกที่ใช้ในภาวะหัวใจหยุดเต้น (Cardiac arrest) คือ?", opts: ["Amiodarone", "Epinephrine", "Atropine", "Lidocaine"], ans: 1 },
+                { q: "3. ภาวะ Triage ในห้องฉุกเฉินสีเหลืองหมายถึง?", opts: ["ฉุกเฉินวิกฤต", "ฉุกเฉินเร่งด่วน", "ไม่ฉุกเฉิน", "เสียชีวิต"], ans: 1 },
+                { q: "4. อาการของ Anaphylactic shock คือ?", opts: ["ผื่นคัน หายใจลำบาก ความดันตก", "ไข้สูงหนาวสั่น", "ปวดท้องรุนแรง", "อาเจียนเป็นเลือด"], ans: 0 },
+                { q: "5. การทำ CPR ในผู้ใหญ่ อัตราการกดหน้าอกต่อการช่วยหายใจคือ?", opts: ["15:2", "30:2", "5:1", "100:2"], ans: 1 },
+                { q: "6. พิษจากงูแมวเซาทำให้เกิดภาวะใดเด่นชัด?", opts: ["เลือดออกง่าย", "ไตวายเฉียบพลัน", "กล้ามเนื้ออ่อนแรง", "ปวดแผลมาก"], ans: 1 },
+                { q: "7. ภาวะ Tension pneumothorax การรักษาเร่งด่วนคือ?", opts: ["ส่งทำ CT", "Needle decompression", "ให้ยาปฏิชีวนะ", "ให้ออกซิเจนอย่างเดียว"], ans: 1 },
+                { q: "8. ยาที่ใช้ต้านฤทธิ์ Morphine เกินขนาดคือ?", opts: ["Naloxone", "Flumazenil", "Atropine", "Charcoal"], ans: 0 },
+                { q: "9. การสำลักสิ่งแปลกปลอมในเด็ก การปฐมพยาบาลคือ?", opts: ["Back blows/Chest thrust", "ให้น้ำดื่ม", "ให้ยาแก้ไอ", "ไม่ต้องทำอะไร"], ans: 0 },
+                { q: "10. สัญญาณเตือนของภาวะสมองขาดเลือด (Stroke) คือ?", opts: ["FAST (Face, Arm, Speech, Time)", "ปวดหัวอย่างเดียว", "เจ็บหน้าอก", "ปวดท้อง"], ans: 0 }
+            ],
+            "นิติเวชศาสตร์": [
+                { q: "1. การตรวจศพเพื่อหาสาเหตุการตายเรียกว่า?", opts: ["Autopsy", "Biopsy", "Surgery", "X-ray"], ans: 0 },
+                { q: "2. สภาพศพที่มีรอยด่างดำบริเวณส่วนล่างเรียกว่า?", opts: ["Livor mortis", "Rigor mortis", "Algor mortis", "Putrefaction"], ans: 0 },
+                { q: "3. การแข็งตัวของกล้ามเนื้อหลังตายเรียกว่า?", opts: ["Rigor mortis", "Livor mortis", "Decomposition", "Mummification"], ans: 0 },
+                { q: "4. กฎหมายการแพทย์ที่สำคัญในไทยเกี่ยวกับการชันสูตรศพคือ?", opts: ["ประมวลกฎหมายวิธีพิจารณาความอาญา", "ประมวลกฎหมายแพ่ง", "พรบ. ยา", "พรบ. วิชาชีพเวชกรรม"], ans: 0 },
+                { q: "5. บาดแผลจากของมีคมที่มีลักษณะยาวกว่าลึกเรียกว่า?", opts: ["Incision", "Laceration", "Abrasion", "Contusion"], ans: 0 },
+                { q: "6. การรัดคอ (Strangulation) มักพบรอยโรคที่ใดมากที่สุด?", opts: ["รอยรัดรอบคอ", "กระดูกไฮออยด์หัก", "แผลถลอกที่หน้า", "แผลที่มือ"], ans: 0 },
+                { q: "7. แผล Laceration เกิดจาก?", opts: ["ของมีคม", "ของไม่มีคมกระแทก", "กระสุนปืน", "ความร้อน"], ans: 1 },
+                { q: "8. ความยินยอมของผู้ป่วย (Informed Consent) ต้องประกอบด้วย?", opts: ["ข้อมูลครบถ้วนและการตัดสินใจด้วยตัวเอง", "การบังคับ", "ความลับ", "แค่ลายเซ็น"], ans: 0 },
+                { q: "9. การตรวจหาระดับแอลกอฮอล์ในเลือด ใช้ในคดีใด?", opts: ["อุบัติเหตุจราจร", "ลักทรัพย์", "หมิ่นประมาท", "ฉ้อโกง"], ans: 0 },
+                { q: "10. ความผิดพลาดทางการแพทย์ (Medical Malpractice) ต้องประกอบด้วย?", opts: ["หน้าที่ ประมาท ความเสียหาย", "เจตนาฆ่า", "เหตุสุดวิสัย", "ความบังเอิญ"], ans: 0 }
+            ],
+            "จิตเวชศาสตร์": [
+                { q: "1. โรคจิตเภท (Schizophrenia) มีอาการเด่นคือ?", opts: ["หูแว่ว ระแวง", "เศร้ามาก", "กินไม่หยุด", "นอนไม่หลับ"], ans: 0 },
+                { q: "2. ยาทางจิตเวชที่เสี่ยงต่อการเกิด EPS (Extrapyramidal symptoms) คือ?", opts: ["Typical Antipsychotics", "SSRI", "Benzodiazepine", "Beta-blocker"], ans: 0 },
+                { q: "3. ภาวะอารมณ์สองขั้ว (Bipolar) ช่วงที่อารมณ์ดีผิดปกติเรียกว่า?", opts: ["Manic episode", "Depressive episode", "Normal", "Anxiety"], ans: 0 },
+                { q: "4. การรักษาภาวะซึมเศร้ารุนแรงที่ไม่ตอบสนองต่อยาคือ?", opts: ["ECT (ไฟฟ้าบำบัด)", "ทำสมาธิ", "อดอาหาร", "นวด"], ans: 0 },
+                { q: "5. ความผิดปกติของการกินที่มีการอาเจียนหลังกิน (Bulimia) ต่างจาก Anorexia คือ?", opts: ["ยังมีน้ำหนักตัวใกล้เคียงปกติ", "น้ำหนักลดฮวบ", "ไม่กินอะไรเลย", "ไม่มีความผิดปกติ"], ans: 0 },
+                { q: "6. ยา SSRI ใช้รักษาโรคกลุ่มใดเป็นหลัก?", opts: ["ซึมเศร้าและวิตกกังวล", "จิตเภท", "นอนหลับ", "เพิ่มความจำ"], ans: 0 },
+                { q: "7. กลไกการป้องกันทางจิตที่มองเห็นข้อเสียตัวเองในผู้อื่นเรียกว่า?", opts: ["Projection", "Denial", "Rationalization", "Repression"], ans: 0 },
+                { q: "8. ผู้ป่วยมีพฤติกรรมย้ำคิดย้ำทำเรียกว่า?", opts: ["OCD", "Phobia", "Panic", "PTSD"], ans: 0 },
+                { q: "9. ภาวะเพ้อ (Delirium) ต่างจากภาวะสมองเสื่อมคือ?", opts: ["เป็นเฉียบพลันผันผวนตามวัน", "เป็นค่อยเป็นค่อยไป", "ไม่มีทางรักษา", "พันธุกรรมเท่านั้น"], ans: 0 },
+                { q: "10. เครื่องมือประเมินระดับความเศร้าที่ใช้บ่อยคือ?", opts: ["9Q", "Mini-mental state", "CAGE", "APGAR"], ans: 0 }
+            ],
+            "วิสัญญีวิทยา": [
+                { q: "1. การประเมินทางเดินหายใจก่อนวางยาสลบใช้เกณฑ์ใด?", opts: ["Mallampati score", "APGAR score", "Glasgow Coma Scale", "BMI"], ans: 0 },
+                { q: "2. ยาที่ใช้ฉีดเพื่อระงับความรู้สึกเฉพาะที่คือ?", opts: ["Lidocaine", "Propofol", "Succinylcholine", "Atropine"], ans: 0 },
+                { q: "3. ภาวะ Malignant hyperthermia คือภาวะแทรกซ้อนจากการใช้ยาใด?", opts: ["Inhalational agents/Succinylcholine", "Morphine", "Diazepam", "Antibiotics"], ans: 0 },
+                { q: "4. การวางยาสลบ (General Anesthesia) ประกอบด้วย?", opts: ["หลับ สงบปวด คลายกล้ามเนื้อ", "แค่หลับ", "แค่คลายกล้ามเนื้อ", "ตื่น"], ans: 0 },
+                { q: "5. เครื่องมือวัดระดับออกซิเจนในเลือดคือ?", opts: ["Pulse oximeter", "Sphygmomanometer", "Thermometer", "Stethoscope"], ans: 0 },
+                { q: "6. ยา Propofol มีฤทธิ์เด่นคือ?", opts: ["ทำให้หลับเร็ว", "แก้ปวด", "คลายกล้ามเนื้อ", "แก้แพ้"], ans: 0 },
+                { q: "7. การบล็อกหลัง (Spinal block) นิยมทำที่บริเวณใด?", opts: ["Lumbar spine", "Cervical spine", "Thoracic spine", "Sacrum"], ans: 0 },
+                { q: "8. ภาวะแทรกซ้อนที่พบบ่อยหลังบล็อกหลังคือ?", opts: ["ปวดหัว (Post-dural puncture headache)", "ขาเดินไม่ได้ตลอดไป", "ไอ", "จาม"], ans: 0 },
+                { q: "9. ยาแก้ปวดกลุ่ม Opioids ให้ผลข้างเคียงที่ต้องระวังคือ?", opts: ["กดการหายใจ", "ท้องเสีย", "ความดันสูง", "ตาพร่า"], ans: 0 },
+                { q: "10. ผู้ป่วยต้องงดน้ำและอาหารก่อนผ่าตัดอย่างน้อยกี่ชั่วโมง?", opts: ["6-8 ชั่วโมง", "1 ชั่วโมง", "24 ชั่วโมง", "ไม่จำเป็นต้องงด"], ans: 0 }
+            ],
+            "จักษุวิทยาและโสต ศอ นาสิก": [
+                { q: "1. โรคต้อหิน (Glaucoma) มีความสัมพันธ์กับภาวะใด?", opts: ["ความดันลูกตาสูง", "การติดเชื้อ", "ตากระตุก", "แพ้แสง"], ans: 0 },
+                { q: "2. อาการตาแดง แสบตา มีขี้ตาเป็นหนอง นึกถึง?", opts: ["เยื่อบุตาอักเสบจากเชื้อแบคทีเรีย", "ต้อลม", "ต้อเนื้อ", "ต้อกระจก"], ans: 0 },
+                { q: "3. ผู้ป่วยมองเห็นภาพมัวเหมือนมีม่านบัง นึกถึงภาวะใด?", opts: ["จอประสาทตาหลุดลอก", "ต้อกระจก", "ตาอักเสบ", "ตาแห้ง"], ans: 0 },
+                { q: "4. ยาหยอดตาที่มี Steroid ต้องระวังการใช้ต่อเนื่องเพราะ?", opts: ["ความดันลูกตาสูง/ต้อกระจก", "ตาอักเสบเพิ่ม", "ตาแห้ง", "ขนตาหลุด"], ans: 0 },
+                { q: "5. โรคหูชั้นกลางอักเสบ (Otitis media) มักพบในเด็กหลังเป็น?", opts: ["หวัด", "ท้องเสีย", "อีสุกอีใส", "แผลที่ผิวหนัง"], ans: 0 },
+                { q: "6. อาการเวียนศีรษะบ้านหมุน (Vertigo) มักสัมพันธ์กับอวัยวะใด?", opts: ["หูชั้นใน", "หัวใจ", "ปอด", "ตับ"], ans: 0 },
+                { q: "7. การคัดจมูกเรื้อรังและน้ำมูกเขียว นึกถึง?", opts: ["ไซนัสอักเสบ", "ภูมิแพ้", "ไข้หวัดใหญ่", "มะเร็งจมูก"], ans: 0 },
+                { q: "8. สารก่อภูมิแพ้ในอากาศที่พบบ่อยคือ?", opts: ["ไรฝุ่น", "น้ำ", "ดิน", "อาหาร"], ans: 0 },
+                { q: "9. อาการเลือดกำเดาไหลบ่อยในผู้สูงอายุควรระวัง?", opts: ["ความดันโลหิตสูง", "เป็นหวัด", "ดื่มน้ำน้อย", "นอนดึก"], ans: 0 },
+                { q: "10. เครื่องมือตรวจหูเรียกว่า?", opts: ["Otoscope", "Ophthalmoscope", "Stethoscope", "Laryngoscope"], ans: 0 }
+            ],
+            "ศัลยศาสตร์ ๑ (ขั้นสูง)": [
+                { q: "1. การผ่าตัดมะเร็งลำไส้ใหญ่ปัจจุบันนิยมใช้วิธีใด?", opts: ["Laparoscopic surgery", "Open surgery เท่านั้น", "เลเซอร์", "ไม่ผ่าตัด"], ans: 0 },
+                { q: "2. ภาวะลำไส้กลืนกัน (Intussusception) ในเด็ก การรักษาคือ?", opts: ["Air reduction", "ผ่าตัดทันที", "ให้ยา", "นวดท้อง"], ans: 0 },
+                { q: "3. แผลผ่าตัดที่มีการติดเชื้อ (Surgical site infection) อาการเด่นคือ?", opts: ["บวม แดง ร้อน มีหนอง", "แห้งสนิท", "คัน", "ไหมละลาย"], ans: 0 },
+                { q: "4. การทำ STOMA คืออะไร?", opts: ["การเปิดทวารเทียม", "การผ่าตัดตา", "การถอนฟัน", "การทำฟัน"], ans: 0 },
+                { q: "5. ภาวะน้ำในถุงอัณฑะ (Hydrocele) การรักษาคือ?", opts: ["ผ่าตัด", "ให้ยาปฏิชีวนะ", "ไม่ต้องทำอะไร", "ทายา"], ans: 0 },
+                { q: "6. นิ่วในถุงน้ำดีที่มีอาการปวดมักเกิดหลังทานอะไร?", opts: ["อาหารไขมันสูง", "ผัก", "ผลไม้", "น้ำเปล่า"], ans: 0 },
+                { q: "7. มะเร็งเต้านม การตรวจคัดกรองที่สำคัญคือ?", opts: ["Mammogram", "X-ray ปอด", "ตรวจเลือด", "อัลตราซาวด์ท้อง"], ans: 0 },
+                { q: "8. การบาดเจ็บที่ตับ (Liver injury) ในผู้ป่วยอุบัติเหตุควรประเมินด้วย?", opts: ["FAST scan / CT", "ฟังเสียงหัวใจ", "ตรวจเลือด", "ดูภายนอก"], ans: 0 },
+                { q: "9. ภาวะไส้ติ่งแตก (Perforated appendicitis) มักทำให้เกิด?", opts: ["เยื่อบุช่องท้องอักเสบ", "ท้องอืด", "น้ำหนักลด", "ผมร่วง"], ans: 0 },
+                { q: "10. การตัดม้าม (Splenectomy) ในผู้ป่วยอุบัติเหตุเสี่ยงต่อการติดเชื้อชนิดใด?", opts: ["แบคทีเรียที่มีแคปซูล", "ไวรัส", "รา", "ปรสิต"], ans: 0 }
+            ],
+            "โสต ศอ นาสิกวิทยา": [
+                { q: "1. อาการเสียงแหบเรื้อรังเกิน 2 สัปดาห์ต้องระวัง?", opts: ["มะเร็งกล่องเสียง", "ไข้หวัด", "ไอธรรมดา", "เหนื่อย"], ans: 0 },
+                { q: "2. สิ่งแปลกปลอมในจมูกมักพบใน?", opts: ["เด็กเล็ก", "ผู้ใหญ่", "ผู้สูงอายุ", "ทารก"], ans: 0 },
+                { q: "3. หูอื้อหลังขึ้นเครื่องบินเกิดจาก?", opts: ["ความกดอากาศ", "ขี้หู", "ติดเชื้อ", "แพ้"], ans: 0 },
+                { q: "4. อาการเจ็บคอมาก กลืนลำบาก และมีฝ้าที่ทอนซิล นึกถึง?", opts: ["ทอนซิลอักเสบ", "หวัดธรรมดา", "ไซนัส", "ภูมิแพ้"], ans: 0 },
+                { q: "5. การได้ยินลดลงในผู้สูงอายุเรียกว่า?", opts: ["Presbycusis", "Otitis", "Vertigo", "Tinnitus"], ans: 0 },
+                { q: "6. อาการไซนัสอักเสบที่ปวดบริเวณโหนกแก้มคือ?", opts: ["Maxillary sinusitis", "Frontal sinusitis", "Ethmoid sinusitis", "Sphenoid sinusitis"], ans: 0 },
+                { q: "7. เสียงก้องในหู (Tinnitus) อาจเกิดจาก?", opts: ["ประสาทหูเสื่อม/ขี้หูอุดตัน", "หวัด", "หิว", "นอนดึก"], ans: 0 },
+                { q: "8. การล้างจมูกด้วยน้ำเกลือมีประโยชน์อย่างไร?", opts: ["ลดน้ำมูกและสารก่อภูมิแพ้", "รักษาไข้", "แก้ไอ", "ทำให้หน้าใส"], ans: 0 },
+                { q: "9. ผู้ป่วยที่มีอาการเจ็บหูและมีหนองไหลจากหูคือ?", opts: ["Otitis media with perforation", "หวัด", "เจ็บคอ", "ฟันผุ"], ans: 0 },
+                { q: "10. เยื่อแก้วหูทะลุเกิดจากอะไรได้บ่อยที่สุด?", opts: ["แคะหู/ติดเชื้อรุนแรง", "ดื่มน้ำมาก", "ออกกำลังกาย", "นอน"], ans: 0 }
+            ]
+        },
+		"year6": {
+            "เวชศาสตร์ปฏิบัติในหอผู้ป่วย": [
+                { q: "1. การสั่งคำสั่งการรักษา (Order) ผู้ป่วยที่ปลอดภัยที่สุดคือ?", opts: ["สั่งทางโทรศัพท์ทุกครั้ง", "เขียนลายมือให้ชัดเจนที่สุด", "ใช้ระบบคอมพิวเตอร์และทวนสอบ (Double check)", "จำตามความเคยชิน"], ans: 2 },
+                { q: "2. ผู้ป่วยหลังผ่าตัด 24 ชั่วโมง มีไข้สูง 38.5 สิ่งที่ควรคิดถึงเป็นลำดับแรกคือ?", opts: ["ภาวะแทรกซ้อนที่ปอด (Atelectasis)", "แผลติดเชื้อ", "ติดเชื้อในกระแสเลือด", "ยาแพ้"], ans: 0 },
+                { q: "3. ในการทำ Handoff (ส่งเวร) ข้อมูลที่สำคัญที่สุดที่ต้องมีคือ?", opts: ["ประวัติครอบครัว", "SBAR (Situation, Background, Assessment, Recommendation)", "นิสัยส่วนตัวผู้ป่วย", "ชื่อแพทย์เจ้าของไข้"], ans: 1 },
+                { q: "4. ผู้ป่วยขอปฏิเสธการรักษาที่ช่วยชีวิต แพทย์ควรทำอย่างไร?", opts: ["บังคับรักษา", "เคารพการตัดสินใจและให้คำแนะนำถึงผลที่ตามมา", "แจ้งตำรวจ", "บอกญาติให้บังคับ"], ans: 1 },
+                { q: "5. การแก้ไขภาวะ Hypokalemia ในหอผู้ป่วยต้องระวังสิ่งใดมากที่สุด?", opts: ["ให้เร็วเกินไปจนหัวใจหยุดเต้น", "แพ้ยา", "ปวดแสบ", "ให้ปริมาณน้อยเกินไป"], ans: 0 },
+                { q: "6. การรับประทานยา (Medication Reconciliation) มีความสำคัญอย่างไร?", opts: ["ป้องกันการเกิดยาตีกัน", "ประหยัดค่าใช้จ่าย", "ให้คนไข้มีงานทำ", "ลดจำนวนยา"], ans: 0 },
+                { q: "7. ผู้ป่วย Sepsis การจัดการที่สำคัญที่สุดใน 1 ชั่วโมงแรกคือ?", opts: ["ให้ยาปฏิชีวนะและสารน้ำ", "ผ่าตัดทันที", "เจาะเลือดดูผลค่าน้ำตาล", "ให้ยาแก้ปวด"], ans: 0 },
+                { q: "8. การบันทึกเวชระเบียน (Chart) ที่ถูกต้องตามกฎหมายคือ?", opts: ["บันทึกเมื่อมีเวลา", "เขียนตามความเป็นจริง ลงวันที่เวลา และลงชื่อกำกับ", "เขียนให้สวยงาม", "ลบคำผิดด้วยน้ำยาลบคำผิด"], ans: 1 },
+                { q: "9. ภาวะ Delirium ในผู้ป่วยสูงอายุบนหอผู้ป่วย มักเกิดจาก?", opts: ["การติดเชื้อ การขาดน้ำ หรือยา", "โรคทางจิต", "อยากกลับบ้าน", "นอนไม่พอ"], ans: 0 },
+                { q: "10. Discharge planning คือการวางแผนเพื่อให้ผู้ป่วย?", opts: ["กลับบ้านได้อย่างปลอดภัย", "ไม่ต้องมาโรงพยาบาลอีกเลย", "ไปทำงานต่อ", "จ่ายเงินให้ครบ"], ans: 0 }
+            ],
+            "เวชศาสตร์ชุมชน": [
+                { q: "1. ระดับการป้องกันโรคขั้นปฐมภูมิ (Primary Prevention) คือ?", opts: ["การฉีดวัคซีน", "การตรวจคัดกรองมะเร็ง", "การผ่าตัดรักษา", "การทำกายภาพบำบัด"], ans: 0 },
+                { q: "2. ในกรณีเกิดโรคระบาดในชุมชน สิ่งแรกที่ต้องทำคือ?", opts: ["การสอบสวนโรค (Outbreak investigation)", "ให้ยาฟรี", "ประชาสัมพันธ์", "ปิดเมือง"], ans: 0 },
+                { q: "3. ระบบหลักประกันสุขภาพถ้วนหน้ามีวัตถุประสงค์หลักคือ?", opts: ["ลดความเหลื่อมล้ำในการเข้าถึงบริการ", "ทำให้รวยขึ้น", "ลดจำนวนแพทย์", "ยกเลิกโรงพยาบาลเอกชน"], ans: 0 },
+                { q: "4. การทำ Health Promotion ในชุมชนเน้นเรื่องใด?", opts: ["พฤติกรรมสุขภาพที่ถูกต้อง", "การรักษาโรคยากๆ", "การสร้างเครื่องมือแพทย์", "การผ่าตัด"], ans: 0 },
+                { q: "5. ประโยชน์ของอาสาสมัครสาธารณสุข (อสม.) คือ?", opts: ["เป็นด่านหน้าในการคัดกรองและให้ความรู้", "ช่วยรักษาโรค", "ช่วยผ่าตัด", "ทำหน้าที่แทนหมอ"], ans: 0 },
+                { q: "6. นิยามของ 'เวชศาสตร์ครอบครัว' คือ?", opts: ["ดูแลต่อเนื่องแบบองค์รวมตลอดช่วงชีวิต", "รักษาแค่เด็ก", "รักษาแค่ผู้ใหญ่", "รักษาเฉพาะทาง"], ans: 0 },
+                { q: "7. ภาวะโลกร้อนส่งผลต่อสุขภาพชุมชนอย่างไร?", opts: ["เพิ่มอุบัติการณ์โรคติดต่อจากพาหะ", "ลดโรคไข้หวัด", "ทำให้คนสุขภาพดีขึ้น", "ไม่มีผล"], ans: 0 },
+                { q: "8. การจัดการขยะติดเชื้อในสถานีอนามัยต้อง?", opts: ["แยกออกจากขยะทั่วไปและกำจัดอย่างถูกวิธี", "ทิ้งถังรวม", "เผาหลังบ้าน", "ฝังดิน"], ans: 0 },
+                { q: "9. ตัวชี้วัดสุขภาพชุมชนที่สำคัญคือ?", opts: ["อัตราการตายและอัตราการเจ็บป่วย", "จำนวนโรงพยาบาล", "จำนวนรถพยาบาล", "จำนวนหมอ"], ans: 0 },
+                { q: "10. การเยี่ยมบ้าน (Home visit) เพื่ออะไร?", opts: ["ประเมินปัจจัยทางสังคมที่ส่งผลต่อสุขภาพ", "ไปกินข้าว", "ไปเที่ยว", "ไปเก็บข้อมูลอย่างเดียว"], ans: 0 }
+            ],
+            "เลือกปฏิบัติงาน (Clinical Competency)": [
+                { q: "1. กรณีถูกเข็มตำขณะปฏิบัติงาน สิ่งแรกที่ต้องทำคือ?", opts: ["ล้างแผลด้วยสบู่และรีบรายงานหัวหน้า/จป.", "ปิดแผลแล้วทำต่อ", "ไม่ต้องทำอะไร", "ล้างด้วยแอลกอฮอล์เข้มข้น"], ans: 0 },
+                { q: "2. จริยธรรมวิชาชีพที่สำคัญที่สุดในการทำงานคือ?", opts: ["ความซื่อสัตย์ต่อผู้ป่วยและตนเอง", "ความเร็ว", "ความเก่ง", "การได้รับคำชม"], ans: 0 },
+                { q: "3. การตรวจร่างกายผู้ป่วยทุกครั้งต้องยึดหลัก?", opts: ["Standard Precaution (ป้องกันการติดเชื้อ)", "ตรวจให้เร็วที่สุด", "ตรวจเฉพาะที่บอก", "ไม่ต้องใช้ถุงมือ"], ans: 0 },
+                { q: "4. การทำหัตถการทางการแพทย์ (เช่น เจาะเลือด) ต้อง?", opts: ["ขอความยินยอม (Informed consent)", "รีบทำโดยไม่ถาม", "ให้พยาบาลทำแทนเสมอ", "ทำเฉพาะเมื่ออยากทำ"], ans: 0 },
+                { q: "5. หลักการของ Evidence-based Medicine (EBM) คือ?", opts: ["การรักษาตามข้อมูลหลักฐานทางวิชาการล่าสุด", "การรักษาตามตำราเก่า", "การรักษาตามใจหมอ", "การรักษาตามความเชื่อ"], ans: 0 },
+                { q: "6. การใช้ความรู้ด้านไอทีในงานแพทย์คือ?", opts: ["การสืบค้นข้อมูลยาและแนวทางการรักษาที่ทันสมัย", "เล่นเกม", "แชทคุยกับเพื่อน", "เช็คเฟสบุ๊ค"], ans: 0 },
+                { q: "7. เมื่อเกิดความผิดพลาดทางการแพทย์ (Error) สิ่งที่ต้องทำคือ?", opts: ["แสดงความรับผิดชอบและเรียนรู้เพื่อป้องกัน", "ปกปิดไว้", "โยนความผิดให้คนอื่น", "ลาออก"], ans: 0 },
+                { q: "8. ความสำคัญของงานวิจัยในงานเลือกปฏิบัติคือ?", opts: ["พัฒนาต่อยอดความรู้ทางการแพทย์", "ทำให้เรียนจบง่ายขึ้น", "ไม่มีความสำคัญ", "เพื่อผลงานส่วนตัว"], ans: 0 },
+                { q: "9. การสื่อสารกับทีมสหวิชาชีพต้องยึดหลัก?", opts: ["ความเคารพและการทำงานเป็นทีม", "การสั่งการ", "การตำหนิ", "การแข่งขัน"], ans: 0 },
+                { q: "10. ความพร้อมก่อนจบการศึกษาเป็นแพทย์คือ?", opts: ["ความรู้ ทักษะ และทัศนคติที่เหมาะสม", "เรียนจบครบชั่วโมง", "สอบผ่านทุกวิชา", "การมีใบปริญญา"], ans: 0 }
+            ]
+        }
+				
+        // *หมายเหตุ: สำหรับปี 2-6 ในระบบจริง โครงสร้างจะใช้ Object แบบเดียวกันนี้ในการดึงข้อสอบอัตโนมัติ
+    };
+
+    let currentYearStr = "";
+    
+    function startExam() {
+        const name = document.getElementById('studentName').value;
+        const year = document.getElementById('studyYear').value;
+
+        if (!name || !year) {
+            alert("กรุณากรอกชื่อและเลือกชั้นปีให้ครบถ้วน");
+            return;
+        }
+
+        currentYearStr = document.getElementById('studyYear').options[document.getElementById('studyYear').selectedIndex].text;
+        
+        document.getElementById('loginArea').style.display = 'none';
+        document.getElementById('examArea').style.display = 'block';
+
+        renderQuestions(year);
+    }
+
+    function renderQuestions(yearKey) {
+        const examForm = document.getElementById('examForm');
+        examForm.innerHTML = ''; 
+
+        // ตรวจสอบว่ามีข้อมูลปีนี้หรือไม่ (ตัวอย่างนี้มี year1 สมบูรณ์)
+        const subjects = examData[yearKey];
+        
+        if (!subjects) {
+            examForm.innerHTML = `<h3 style="color:red; text-align:center;">กำลังปรับปรุงฐานข้อมูลข้อสอบสำหรับชั้นปีนี้... กรุณาทดสอบด้วย "ปี 1 เทอม 1"</h3>`;
+            return;
+        }
+
+        for (const [subjectName, questions] of Object.entries(subjects)) {
+            const subjectDiv = document.createElement('div');
+            subjectDiv.className = 'subject-container';
+            
+            const title = document.createElement('div');
+            title.className = 'subject-title';
+            title.innerText = `วิชา: ${subjectName}`;
+            subjectDiv.appendChild(title);
+
+            questions.forEach((item, index) => {
+                const qBlock = document.createElement('div');
+                qBlock.className = 'question-block';
+                
+                const qText = document.createElement('div');
+                qText.className = 'question-text';
+                qText.innerText = item.q;
+                qBlock.appendChild(qText);
+
+                const optionsDiv = document.createElement('div');
+                optionsDiv.className = 'options';
+
+                item.opts.forEach((opt, optIndex) => {
+                    const label = document.createElement('label');
+                    const radio = document.createElement('input');
+                    radio.type = 'radio';
+                    // บังคับทำทุกข้อ
+                    radio.required = true;
+                    radio.name = `ans_${subjectName}_${index}`;
+                    radio.value = optIndex;
+
+                    label.appendChild(radio);
+                    label.appendChild(document.createTextNode(opt));
+                    optionsDiv.appendChild(label);
+                });
+
+                qBlock.appendChild(optionsDiv);
+                subjectDiv.appendChild(qBlock);
+            });
+
+            examForm.appendChild(subjectDiv);
+        }
+    }
+
+    function calculateGrade(score) {
+        if (score >= 9) return { letter: 'A', point: 4.0 };
+        if (score >= 8) return { letter: 'B+', point: 3.5 };
+        if (score >= 7) return { letter: 'B', point: 3.0 };
+        if (score >= 6) return { letter: 'C+', point: 2.5 };
+        if (score >= 5) return { letter: 'C', point: 2.0 };
+        if (score >= 4) return { letter: 'D+', point: 1.5 };
+        if (score >= 3) return { letter: 'D', point: 1.0 };
+        return { letter: 'F', point: 0.0 };
+    }
+
+    function submitExam() {
+        const examForm = document.getElementById('examForm');
+        if (!examForm.checkValidity()) {
+            alert("กรุณาทำข้อสอบให้ครบทุกข้อ (ห้ามขาด) ระบบถึงจะประมวลผลได้");
+            return;
+        }
+
+        const name = document.getElementById('studentName').value;
+        const yearKey = document.getElementById('studyYear').value;
+        const subjects = examData[yearKey];
+
+        if (!subjects) return;
+
+        let totalPoints = 0;
+        let subjectCount = 0;
+        let resultsForDB = {};
+
+        const tbody = document.getElementById('gradeBody');
+        tbody.innerHTML = '';
+
+        for (const [subjectName, questions] of Object.entries(subjects)) {
+            let score = 0;
+            questions.forEach((item, index) => {
+                const selected = document.querySelector(`input[name="ans_${subjectName}_${index}"]:checked`);
+                if (selected && parseInt(selected.value) === item.ans) {
+                    score++;
+                }
+            });
+
+            const grade = calculateGrade(score);
+            totalPoints += grade.point;
+            subjectCount++;
+
+            resultsForDB[subjectName] = { score: score, grade: grade.letter };
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${subjectName}</td>
+                <td>${score} / 10</td>
+                <td><strong>${grade.letter}</strong></td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        const gpa = (totalPoints / subjectCount).toFixed(2);
+        
+        document.getElementById('resName').innerText = name;
+        document.getElementById('resYear').innerText = currentYearStr;
+        document.getElementById('finalGPA').innerText = gpa;
+
+        document.getElementById('examArea').style.display = 'none';
+        document.getElementById('resultArea').style.display = 'block';
+
+        // บันทึกลง Firebase Firestore
+        db.collection("examResults").add({
+            studentName: name,
+            academicYear: "2569",
+            studyYear: currentYearStr,
+            gpa: gpa,
+            details: resultsForDB,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+            console.log("บันทึกข้อมูลนักศึกษาลงฐานข้อมูลสำเร็จ!");
+        }).catch((error) => {
+            console.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล: ", error);
+        });
+    }
+</script>
+
+</body>
+</html>
+
